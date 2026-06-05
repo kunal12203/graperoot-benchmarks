@@ -1,127 +1,222 @@
 # GrapeRoot Benchmarks
 
-Benchmark harness for evaluating GrapeRoot's context engineering against baselines (Normal Claude, Augment Code, Sourcebot, jCodeMunch, CodeReviewGraph).
-
-## Results Summary
-
-| Benchmark | Prompts | GrapeRoot | Best Baseline | Cost Saved |
-|-----------|---------|-----------|---------------|------------|
-| Agentic v1 (34 microservices, 12 langs) | 110 | 87.12 | 85.21 (Normal) | 25% |
-| sonic-swss (C++, 520 files) | 30 | 80.4 | 78.0 (Normal) | 33% |
-| Medusa + Gitea (TS + Go) | 33 | 75% win rate | — | 57% avg |
-| Boris 4-Way (Medusa TS) | 21 | Best Q/$ | — | 66% |
-| Sentry Python (7,762 files) | 24 | Comparable Q | — | 53% |
-
-## Structure
-
-```
-swebench/           SWE-bench Pro harness (Docker + graph tools)
-  graperoot_bench.py    Orchestrator — runs tasks with graph context
-  graph_tool_runner.py  Standalone tool dispatcher (graph_continue, graph_read, fallback_rg)
-  evaluate.py           Apply patches + run tests in Docker
-  METHODOLOGY.md        SWE-bench specific methodology
-
-custom/             Custom multi-tool comparison benchmarks
-  run_medusa_v6.py      3-way comparison runner (GR vs CRG vs Normal)
-
-judge/              LLM judge and rejudge tooling
-  rejudge_all.py        Retro-rejudge with full clean diffs
-
-prompts/            Prompt suites (JSON)
-  typescript_monorepo_30.json   Medusa (1,571 TS files)
-  gitea_go_30.json              Gitea (Go monorepo)
-  calcom_vs_augment.json        Cal.com vs Augment comparison
-
-METHODOLOGY.md      Full benchmark methodology documentation
-```
-
-## How It Works
-
-### Architecture
-
-```
-1. Load prompt from suite (JSON)
-2. Start isolated environment (Docker container or git worktree)
-3. Agent loop:
-   - LLM call (Claude Sonnet 4.6 via Bedrock)
-   - Tool calls (mode-specific: graph / grep / MCP)
-   - File edits + bash commands
-4. git commit — tagged "Step N: task_name"
-5. Extract full source-only diff
-6. LLM Judge scores (0–100) with rubric
-7. Log: prompt, response, diff, score, cost, tokens
-```
-
-### Scoring
-
-Independent LLM judge (Claude Haiku 4.5) scores each step 0-100:
-
-| Score | Meaning |
-|-------|---------|
-| 80-100 | Task fully completed, correct implementation |
-| 60-79 | Mostly complete, minor issues |
-| 40-59 | Partial, core logic present but incomplete |
-| 20-39 | Attempted but significant issues |
-| 0-19 | Failed or completely wrong |
-
-**Judge input:** task prompt + agent response (5K chars) + full git diff (source files only).
-
-### Mode Isolation
-
-Each mode runs in its own project directory with independent git history:
-
-| Mode | Context Strategy | Tools |
-|------|-----------------|-------|
-| GrapeRoot | Proactive — pre-loads files/symbols | graph_continue, graph_read, fallback_rg |
-| Sourcebot/Augment | Reactive — agent queries retrieval | search_symbols, get_context |
-| Normal (baseline) | Reactive — standard bash | grep, find, cat |
-
-### Key Parameters
-
-- **Model:** Claude Sonnet 4.6 (Bedrock), temperature 0.0
-- **Max steps:** 80 (no cost limit)
-- **Max tokens/response:** 4,096
-- **Judge:** Claude Haiku 4.5
-- **Graph builder:** tree-sitter (JS/TS/Python/Go/Rust/C++)
-- **Diff filtering:** Excludes node_modules, lock files, .dual-graph/
+Run your own benchmarks comparing GrapeRoot's context engineering against vanilla Claude Code, Augment Code, or Sourcebot. Works on any machine — macOS, Linux, or WSL.
 
 ## Quick Start
 
-### SWE-bench Pro
-
 ```bash
-pip install litellm datasets
+# 1. Clone this repo
+git clone https://github.com/kunal12203/graperoot-benchmarks.git
+cd graperoot-benchmarks
 
-# Run 50 tasks with 2 parallel workers
-python3 swebench/graperoot_bench.py --slice 0:50 --workers 2 --output ./results
+# 2. Install GrapeRoot (one command — works on macOS/Linux/WSL)
+curl -sSL https://raw.githubusercontent.com/kunal12203/Codex-CLI-Compact/main/install.sh | bash
 
-# Evaluate patches
-python3 swebench/evaluate.py ./results/preds.json
+# 3. Install Python dependencies
+pip install -r requirements.txt
+
+# 4. Set your API key (Anthropic or AWS Bedrock)
+export ANTHROPIC_API_KEY="sk-ant-..."
+# OR for Bedrock:
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_DEFAULT_REGION="us-east-1"
+
+# 5. Run a benchmark
+python3 custom/run_benchmark.py --project /path/to/any/repo --prompts prompts/typescript_monorepo_30.json
 ```
 
-### Custom Benchmarks
+## What This Measures
+
+We run the **same prompts** through multiple modes on the **same codebase**, then score with an independent LLM judge:
+
+| Mode | How it finds code | Tools available |
+|------|-------------------|-----------------|
+| **GrapeRoot** | Proactive — pre-indexes symbols, pre-loads relevant files before each turn | `graph_continue`, `graph_read`, `fallback_rg`, `graph_impact` |
+| **Normal** (baseline) | Reactive — agent uses grep/find/cat | `grep`, `find`, `cat`, `bash` |
+| **Augment/Sourcebot** | Reactive — agent queries a retrieval API | `search_symbols`, `get_context` |
+
+## Setup Guide
+
+### Prerequisites
+
+- Python 3.10+
+- Git
+- Any Claude API access (Anthropic direct or AWS Bedrock)
+- A codebase to benchmark against (or use the included prompts with public repos)
+
+### Install GrapeRoot
+
+**macOS / Linux / WSL:**
+```bash
+curl -sSL https://raw.githubusercontent.com/kunal12203/Codex-CLI-Compact/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/kunal12203/Codex-CLI-Compact/main/install.ps1 | iex
+```
+
+This installs the GrapeRoot graph server and CLI. After install, initialize on any project:
+```bash
+graperoot /path/to/your/project
+```
+
+### Install Dependencies
 
 ```bash
-# 3-way comparison on Medusa TypeScript monorepo
-python3 custom/run_medusa_v6.py --modes v61_cont normal_cont --prompts 1-30
-
-# Rejudge all with updated scoring
-python3 judge/rejudge_all.py 50steps
+pip install -r requirements.txt
 ```
+
+For SWE-bench Pro evaluation (optional):
+```bash
+pip install datasets
+# Docker required for container-based evaluation
+```
+
+## Running Benchmarks
+
+### Option 1: Quick A/B Test (any repo)
+
+Compare GrapeRoot vs Normal on your own codebase:
+
+```bash
+python3 custom/run_benchmark.py \
+  --project /path/to/your/repo \
+  --prompts prompts/typescript_monorepo_30.json \
+  --modes graperoot normal \
+  --output ./my_results
+```
+
+This will:
+1. Index your repo with GrapeRoot's graph builder (tree-sitter AST)
+2. Run each prompt through both modes independently
+3. Score each response with the LLM judge
+4. Output results as JSONL + summary markdown
+
+### Option 2: SWE-bench Pro
+
+Run against the standard SWE-bench Pro dataset (731 real GitHub issues):
+
+```bash
+# Requires Docker for container isolation
+python3 swebench/graperoot_bench.py \
+  --slice 0:50 \
+  --workers 2 \
+  --output ./swebench_results
+
+# Evaluate patches (applies to Docker containers, runs tests)
+python3 swebench/evaluate.py ./swebench_results/preds.json
+```
+
+### Option 3: Custom Prompt Suite
+
+Write your own prompts in JSON format:
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Find SQL injection vulnerabilities",
+    "prompt": "Audit this codebase for SQL injection. List every file:line where raw user input reaches a database query without parameterization.",
+    "category": "security",
+    "expected_files": ["src/db/queries.ts", "src/api/users.ts"]
+  }
+]
+```
+
+Then run:
+```bash
+python3 custom/run_benchmark.py \
+  --project /path/to/repo \
+  --prompts my_prompts.json \
+  --modes graperoot normal
+```
+
+## Scoring
+
+### LLM Judge (0–100)
+
+An independent LLM (Claude Haiku 4.5) scores each response based on the full git diff:
+
+| Score | Meaning |
+|-------|---------|
+| 80–100 | Task fully completed, correct implementation, good code quality |
+| 60–79 | Mostly complete, minor issues or missing edge cases |
+| 40–59 | Partial — core logic present but incomplete |
+| 20–39 | Attempted but significant issues or wrong approach |
+| 0–19 | Failed, no meaningful changes or completely wrong |
+
+**Judge input:** task prompt + agent response (5K chars) + full git diff (source files only, no lock files).
+
+### What the judge assesses
+- Whether required files were created/modified
+- Structural correctness (types, logic, API design)
+- Completeness against the task spec
+- Obvious bugs visible in the diff
+
+### What the judge cannot assess
+- Whether code compiles (no `tsc`/`go build` run)
+- Whether tests pass (no `npm test` run during scoring)
+- Runtime behavior and subtle integration issues
+
+### Re-scoring
+
+All results include the raw diff. Re-run the judge anytime with updated logic:
+```bash
+python3 judge/rejudge_all.py <run_name>
+```
+
+## Key Parameters
+
+| Parameter | Value | Why |
+|-----------|-------|-----|
+| Model | Claude Sonnet 4.6 | Latest, most capable coding model |
+| Temperature | 0.0 | Deterministic — same prompt = same output |
+| Max tokens/response | 4,096 | Enough for any single edit |
+| Max agent steps | 80 | No artificial ceiling on complex tasks |
+| Judge model | Claude Haiku 4.5 | Fast, cheap, consistent scoring |
+| Graph builder | tree-sitter | JS/TS/Python/Go/Rust/C++ support |
+| Diff filter | Excludes node_modules, lock files | Judge sees only source changes |
+
+## Results Format
+
+Each run produces a JSONL file. Every line contains:
+
+```json
+{
+  "prompt_id": 1,
+  "mode": "graperoot",
+  "quality_score": 87,
+  "judge_reason": "All required endpoints created...",
+  "cost_usd": 0.54,
+  "turns": 12,
+  "tokens_in": 45000,
+  "tokens_out": 8200,
+  "wall_time_s": 34.2,
+  "git_diff": "...",
+  "response": "..."
+}
+```
+
+## Our Results
+
+| Benchmark | Prompts | Languages | GrapeRoot Quality | Cost Saved vs Normal |
+|-----------|---------|-----------|-------------------|---------------------|
+| 34 Microservices | 110 | 12 | 87.12 (0 below 80) | 25% |
+| sonic-swss C++ | 30 | C++ | 80.4 | 33% |
+| Medusa + Gitea | 33 | TS + Go | 75% win rate | 57% avg |
+| Sentry Python | 24 | Python | Comparable | 53% |
+
+Full interactive results: [graperoot.dev/benchmarks](https://graperoot.dev/benchmarks)
 
 ## Reproducibility
 
-- All results stored as JSONL with full metadata
-- Git history has one commit per step, tagged `Step N: step_name`
-- Re-run the judge anytime: `python3 judge/rejudge_all.py <run>`
+- Every step is a tagged git commit (`Step N: task_name`)
+- All raw data in JSONL with complete metadata
+- Re-run the judge anytime without re-running the agent
 - No per-repo tuning — same system prompt for all tasks
-
-## Limitations
-
-- Judge cannot verify compilation (structural correctness only)
-- No test execution during solving (only final eval)
-- LLM judge has ~+/-3 point variance on repeated scoring
-- Cost includes graph tool overhead (~$0.01/query)
+- No prompt engineering per tool — identical inputs across modes
 
 ## License
 
