@@ -45,13 +45,6 @@ Claude Sonnet 4.6 + GrapeRoot Pro (context engineering) vs vanilla Claude models
 
 4. **graph_impact**: Find all dependents of a file via import edges.
 
-### What the agent does NOT have
-- No thinking/extended reasoning mode
-- No multi-turn planning
-- No web search
-- No test execution during solving (only final eval)
-- No retrieval augmentation from issue comments/PRs
-- Just: graph tools + bash in a Docker container
 
 ## How to reproduce
 
