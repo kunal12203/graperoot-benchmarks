@@ -1,0 +1,212 @@
+[
+  {
+    "id": 1,
+    "title": "Auth Guard Coverage",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Audit all REST/GraphQL endpoints and identify which ones are missing authentication guards or decorators. For each unprotected endpoint, show the file path, the route/resolver method, and explain what data or action is exposed without auth. Focus on admin-level or user-data endpoints that should require authentication."
+  },
+  {
+    "id": 2,
+    "title": "Missing Input Validation",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find all controller or resolver methods that accept user-supplied input (request body, query params, route params) without validation decorators (e.g. class-validator, Zod, Joi). List every unvalidated endpoint with file path and parameter names. These are potential injection or data corruption points."
+  },
+  {
+    "id": 3,
+    "title": "N+1 Query Patterns",
+    "category": "performance",
+    "task_type": "exhaustive",
+    "prompt": "Find all N+1 database query patterns in the codebase. Look for: (1) loops or array methods containing awaited DB calls, (2) GraphQL @ResolveField methods making individual DB queries per parent item without DataLoader batching, (3) recursive functions issuing DB queries per node. For each instance show the file, function name, the loop/resolver pattern, and estimate queries-per-request at scale."
+  },
+  {
+    "id": 4,
+    "title": "Silent Error Swallowing",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find all try/catch blocks that swallow errors silently — either with an empty catch body, or a catch that only logs without re-throwing or returning an error response. List every instance with file path and function name. These hide bugs in production and make debugging impossible."
+  },
+  {
+    "id": 5,
+    "title": "TypeScript `any` Audit",
+    "category": "code_quality",
+    "task_type": "exhaustive",
+    "prompt": "Audit all uses of TypeScript `any` type across the codebase. Categorize them: (1) function parameters typed as `any`, (2) return types of `any`, (3) type assertions `as any`, (4) variables declared with `any`. List the top 20 most impactful instances by file and line, prioritizing public API boundaries and service interfaces over internal utilities."
+  },
+  {
+    "id": 6,
+    "title": "Dead Exports",
+    "category": "code_quality",
+    "task_type": "exhaustive",
+    "prompt": "Identify exported functions, classes, and constants that appear to have no internal consumers — symbols exported from a file but never imported elsewhere in the codebase. List them by package/module. Focus on non-entry-point files where dead exports represent unused code that should be cleaned up."
+  },
+  {
+    "id": 7,
+    "title": "Missing Database Transactions",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find service methods that perform multiple database write operations (create/update/delete) without wrapping them in a transaction. If any step fails partway through, the database will be in an inconsistent state. List every multi-step write sequence that lacks transaction protection, with file path and the operations involved."
+  },
+  {
+    "id": 8,
+    "title": "Hardcoded Secrets & Config",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find hardcoded secrets, credentials, API keys, or environment-specific configuration values in source files (not .env files). Look for hardcoded URLs, tokens, passwords, database connection strings, or magic strings that should be environment variables. List every instance with file path and the type of hardcoded value."
+  },
+  {
+    "id": 9,
+    "title": "Circular Dependencies",
+    "category": "architecture",
+    "task_type": "exhaustive",
+    "prompt": "Identify circular import dependencies between modules and packages. Trace import chains where module A imports B which imports A (direct), or longer cycles. Focus on cross-package circular dependencies as these are the most dangerous. List all cycles found with the full import chain for each."
+  },
+  {
+    "id": 10,
+    "title": "Service Methods Without Tests",
+    "category": "testing",
+    "task_type": "exhaustive",
+    "prompt": "Identify service class methods that have no corresponding unit test coverage. For each service file, check whether there is a matching test file and whether the public methods are tested. List services with the lowest test coverage, showing which specific methods are untested. Focus on business-critical services (payment, auth, order processing) first."
+  },
+  {
+    "id": 11,
+    "title": "Environment Variable Validation",
+    "category": "reliability",
+    "task_type": "targeted",
+    "prompt": "Find all places where process.env variables are accessed without validation or fallback. The app should validate all required environment variables at startup and fail fast with a clear error if any are missing. List every unvalidated env var access with file path, and identify which are critical (would cause runtime failures if missing)."
+  },
+  {
+    "id": 12,
+    "title": "Unhandled Promise Rejections",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find all fire-and-forget async calls — places where a Promise is created but not awaited and has no .catch() handler. Also look for async event handlers or callbacks where errors are not caught. These cause silent failures and 'UnhandledPromiseRejection' crashes. List every instance with file path and context."
+  },
+  {
+    "id": 13,
+    "title": "Missing Pagination Limits",
+    "category": "performance",
+    "task_type": "exhaustive",
+    "prompt": "Find all database queries that fetch potentially unbounded result sets — queries with no LIMIT/take clause, or list endpoints with no pagination that could return thousands of records. List every instance with file path, the query/endpoint, and the table/entity being fetched. Unbounded queries are a major performance and memory risk."
+  },
+  {
+    "id": 14,
+    "title": "Inconsistent Error Response Format",
+    "category": "code_quality",
+    "task_type": "exhaustive",
+    "prompt": "Audit the error response format across all API endpoints. Find cases where errors are returned in different formats — some use { error: string }, others use { message: string }, others throw HTTP exceptions with varying shapes. List the different error response patterns found and which endpoints/files use each pattern."
+  },
+  {
+    "id": 15,
+    "title": "Missing Rate Limiting",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Identify API endpoints that should have rate limiting but don't — particularly authentication endpoints (login, register, password reset), OTP/verification endpoints, and expensive computation endpoints. Show which rate-limiting decorators or middleware exist in the codebase and which sensitive endpoints are missing them."
+  },
+  {
+    "id": 16,
+    "title": "Privilege Escalation Risks",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Find endpoints or service methods where the authorization check is insufficient — places where a regular user could escalate to admin privileges, access another user's data by changing an ID parameter, or perform actions beyond their role. Look for missing ownership checks, role checks that only verify authentication not authorization, and IDOR vulnerabilities."
+  },
+  {
+    "id": 17,
+    "title": "Memory Leaks in Event Listeners",
+    "category": "performance",
+    "task_type": "exhaustive",
+    "prompt": "Find event listeners, subscriptions, or observable subscriptions that are registered without a corresponding cleanup/unsubscribe call. Look for: addEventListener without removeEventListener, EventEmitter.on without .off or .removeListener, RxJS subscriptions without unsubscribe in cleanup hooks. List every instance with file path."
+  },
+  {
+    "id": 18,
+    "title": "Blocking Synchronous Operations",
+    "category": "performance",
+    "task_type": "exhaustive",
+    "prompt": "Find synchronous/blocking operations being used where async alternatives exist — fs.readFileSync, fs.writeFileSync, execSync, JSON.parse on large inputs in the hot path, or CPU-intensive operations in the main event loop. List each instance with file path and the async alternative that should be used instead."
+  },
+  {
+    "id": 19,
+    "title": "Missing Retry Logic",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find all outbound HTTP calls and external service integrations (email, payment, storage, webhooks) that have no retry logic or circuit breaker pattern. A single transient failure will permanently fail the operation. List every external call site with file path, the service being called, and whether any retry/timeout/fallback logic exists."
+  },
+  {
+    "id": 20,
+    "title": "Sensitive Data in Logs",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find places where sensitive data (passwords, tokens, API keys, PII like emails/phone numbers, payment data) may be logged to console or logger statements. Look for log statements that include request bodies, user objects, or error objects that may contain sensitive fields. List every risky log statement with file path."
+  },
+  {
+    "id": 21,
+    "title": "SQL Injection via Raw Queries",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find all raw SQL queries, $queryRaw, query(), or template literal SQL strings in the codebase. Identify any that interpolate user-supplied values directly into the query string rather than using parameterized queries/prepared statements. List every raw query usage with file path and whether it's safely parameterized."
+  },
+  {
+    "id": 22,
+    "title": "Missing Indexes for Query Patterns",
+    "category": "performance",
+    "task_type": "exhaustive",
+    "prompt": "Analyze the database query patterns in service files and identify fields frequently used in WHERE clauses, JOIN conditions, or ORDER BY that likely lack database indexes. Cross-reference with the schema/migration files to check for missing index declarations. List the top 10 most impactful missing indexes with query patterns and estimated table sizes."
+  },
+  {
+    "id": 23,
+    "title": "Flaky Test Patterns",
+    "category": "testing",
+    "task_type": "exhaustive",
+    "prompt": "Find test patterns that are likely to be flaky: (1) tests that depend on current time (Date.now(), new Date()) without mocking, (2) tests with hardcoded timeouts/sleeps, (3) tests that depend on execution order, (4) tests that use real network calls instead of mocks, (5) tests that don't clean up database state between runs. List every flaky pattern found with file and test name."
+  },
+  {
+    "id": 24,
+    "title": "Missing Request Timeout Handling",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find all HTTP client calls, database queries, and external service calls that have no timeout configured. An unresponsive external service can hang the entire request indefinitely. List every call site missing a timeout with file path, the service/endpoint called, and what the appropriate timeout should be."
+  },
+  {
+    "id": 25,
+    "title": "Inconsistent Naming Conventions",
+    "category": "code_quality",
+    "task_type": "exhaustive",
+    "prompt": "Audit naming conventions across the codebase. Find violations of consistent naming: (1) functions/methods that don't follow camelCase, (2) types/interfaces not following PascalCase, (3) constants not following SCREAMING_SNAKE_CASE or camelCase consistently, (4) file names inconsistent with their exported class/function. List the top violations by package with specific examples."
+  },
+  {
+    "id": 26,
+    "title": "Missing Health Check Endpoints",
+    "category": "architecture",
+    "task_type": "targeted",
+    "prompt": "Identify what health check or readiness/liveness probe endpoints exist in the codebase. Are there /health, /ready, /alive, or similar endpoints? Do they check database connectivity, external service availability, and memory usage? Show the health check implementation and identify what critical dependencies are NOT checked."
+  },
+  {
+    "id": 27,
+    "title": "Unclosed Database Connections",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find places where database connections or query resources might not be properly closed — particularly in error paths. Look for: try blocks that open connections without a finally clause to close them, raw client usage without connection pooling, or Prisma/TypeORM transactions that may leak on exception. List every risky pattern with file path."
+  },
+  {
+    "id": 28,
+    "title": "Missing CORS Configuration",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Audit the CORS configuration across all API services. Find: (1) endpoints with wildcard (*) CORS that accept credentials, (2) missing CORS configuration on public-facing APIs, (3) overly permissive allowed-origins lists. Show the current CORS setup and identify what should be tightened."
+  },
+  {
+    "id": 29,
+    "title": "Stale or Vulnerable Dependencies",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Identify packages in package.json files that use dangerous version ranges (e.g. * or x.x.*), have known security issues based on common vulnerability patterns, or appear significantly outdated based on major version numbers. List the top 15 highest-risk dependency declarations across all packages in the monorepo."
+  },
+  {
+    "id": 30,
+    "title": "Missing Audit Logging",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Identify admin operations, sensitive data mutations (delete user, change role, transfer funds, export data), and security events (failed login, permission denied) that have no audit log entries. Find what audit/activity logging infrastructure exists and map which critical operations are missing audit trail coverage. List every gap with file path and operation type."
+  }
+]

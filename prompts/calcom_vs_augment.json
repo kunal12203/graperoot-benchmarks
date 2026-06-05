@@ -1,0 +1,182 @@
+[
+  {
+    "id": 1,
+    "title": "Booking Creation Call Chain",
+    "domain": "navigation",
+    "prompt": "In the cal.com monorepo, trace the full call chain for a booking creation event: starting from the tRPC router that handles bookings.create, follow it through service layers, into the database write, and through any event emission (webhooks, emails, calendar sync). List every file touched, in order of execution, with the function name at each hop."
+  },
+  {
+    "id": 2,
+    "title": "API Entry Point Map",
+    "domain": "navigation",
+    "prompt": "List all HTTP API entry points in apps/web and packages/trpc. For each entry point, show: the route path or tRPC procedure name, the file that defines it, and the top-level handler function name. Group by domain (bookings, availability, users, teams, payments, webhooks)."
+  },
+  {
+    "id": 3,
+    "title": "Feature Flag Usage Map",
+    "domain": "navigation",
+    "prompt": "Find every place in the cal.com codebase where feature flags are checked or toggled. Identify the feature flag system being used (env vars, database flags, etc.), list all flag names found, and show which files read each flag. Are there any flags that are checked but never set, or set but never checked?"
+  },
+  {
+    "id": 4,
+    "title": "Race Condition in Booking",
+    "domain": "bug_finding",
+    "prompt": "Find potential race conditions in the cal.com booking flow. Specifically look for: (a) availability checks that are not atomic with the booking write, (b) double-booking scenarios where two concurrent requests could both pass an availability check before either writes, (c) any optimistic locking or transaction isolation patterns that exist or are missing. Show the specific files and code patterns."
+  },
+  {
+    "id": 5,
+    "title": "Unhandled Promise Rejections",
+    "domain": "bug_finding",
+    "prompt": "Find all async functions and Promise chains in the cal.com backend (apps/web/pages/api and packages/) where promise rejections are silently swallowed — either bare .catch(() => {}) with no action, try/catch that only logs without propagating, or async functions called without await and without .catch(). List each with file path and the problematic pattern."
+  },
+  {
+    "id": 6,
+    "title": "Timezone Handling Bugs",
+    "domain": "bug_finding",
+    "prompt": "Cal.com is a scheduling app — timezone bugs are critical. Find all places where date/time arithmetic is performed without explicit timezone handling: raw new Date() calls in scheduling logic, moment/dayjs operations missing timezone offsets, or places where UTC vs local time could be confused. List each occurrence with file path, function name, and why it's risky."
+  },
+  {
+    "id": 7,
+    "title": "Package Dependency Graph",
+    "domain": "architecture",
+    "prompt": "Map the package dependency graph for the top 15 most-imported packages in the cal.com monorepo (packages/* and apps/*). For each, show what it imports from and what imports it. Identify any packages that are dependency bottlenecks (imported by 10+ other packages) and flag any circular dependencies."
+  },
+  {
+    "id": 8,
+    "title": "Data Layer Architecture",
+    "domain": "architecture",
+    "prompt": "Describe the data access architecture in cal.com: where does Prisma get called, is there a repository layer, are there raw SQL queries mixed with ORM calls, and how is the Prisma client instantiated and shared? Find all places where the Prisma client is directly imported and used in route handlers vs. abstracted behind a service/repository. Assess whether the current pattern is consistent."
+  },
+  {
+    "id": 9,
+    "title": "Authentication Flow Architecture",
+    "domain": "architecture",
+    "prompt": "Document the complete authentication architecture in cal.com: how NextAuth is configured, what providers are supported, how session tokens are validated on API routes, how the auth middleware works, and how user identity flows from the session into tRPC context. Show the key files and their relationships. Identify any auth bypass risks or inconsistencies."
+  },
+  {
+    "id": 10,
+    "title": "Duplicated Business Logic",
+    "domain": "refactoring",
+    "prompt": "Find duplicated business logic in the cal.com codebase — specifically functions or code blocks that do the same thing but are defined separately in multiple files. Focus on: availability calculation logic, email sending logic, webhook dispatch logic, and date/time formatting. For each duplication found, show both locations and suggest a consolidation strategy."
+  },
+  {
+    "id": 11,
+    "title": "God Object Services",
+    "domain": "refactoring",
+    "prompt": "Find service files or utility modules in cal.com that have too many responsibilities (more than ~200 lines, more than 15 exported functions, or that mix multiple unrelated concerns). List each such file, its approximate line count, list of exported symbols, and an assessment of which concerns should be split out into separate modules."
+  },
+  {
+    "id": 12,
+    "title": "Magic Numbers and Hardcoded Values",
+    "domain": "refactoring",
+    "prompt": "Find all hardcoded numeric literals and hardcoded string constants in cal.com that should be named constants or configuration values. Focus on: timeout values in milliseconds, retry counts, URL strings, email addresses, rate limit thresholds, and slot duration defaults. List each with file path and context. Exclude test files and node_modules."
+  },
+  {
+    "id": 13,
+    "title": "Webhook Dispatch Chain",
+    "domain": "cross_file_deps",
+    "prompt": "Trace the complete webhook dispatch pipeline in cal.com: from the point where a booking event is created, through the webhook trigger, payload construction, HTTP delivery, retry logic, and any failure handling. List every file and function involved in this chain, in execution order."
+  },
+  {
+    "id": 14,
+    "title": "Email Template Dependencies",
+    "domain": "cross_file_deps",
+    "prompt": "Map the email sending system in cal.com: which templates exist, what data each template needs, which code paths trigger each email type, and whether all required template variables are always provided by the callers. Identify any email types where the caller might fail to pass required variables to the template."
+  },
+  {
+    "id": 15,
+    "title": "tRPC Procedure to DB Path",
+    "domain": "cross_file_deps",
+    "prompt": "For the 5 most-used tRPC procedures in cal.com (estimate by how many UI components call them), trace the complete path from the procedure definition to the Prisma query. Show each function call in the chain, which file it's in, and whether there are any layers that could be bypassed. Flag any procedures that hit the database directly without going through a service layer."
+  },
+  {
+    "id": 16,
+    "title": "Missing Authorization Checks",
+    "domain": "security",
+    "prompt": "Audit all tRPC procedures and Next.js API routes in cal.com for missing authorization. Specifically: (a) routes that check authentication but not authorization (any logged-in user can access other users' data), (b) routes that use user-supplied IDs to fetch records without verifying the current user owns that record, (c) admin-only operations accessible to non-admins. List each with file path and the specific gap."
+  },
+  {
+    "id": 17,
+    "title": "Input Validation Gaps",
+    "domain": "security",
+    "prompt": "Find all tRPC procedures and API route handlers in cal.com that accept user-supplied input and either: (a) don't validate with Zod or equivalent, (b) validate but then use the raw unvalidated value instead of the parsed output, (c) pass user input directly to Prisma where() without whitelisting allowed fields. List each with file path and input parameter name."
+  },
+  {
+    "id": 18,
+    "title": "Secret and Token Exposure",
+    "domain": "security",
+    "prompt": "Find all places in the cal.com codebase where secrets, API keys, or tokens could be leaked: (a) server-side environment variables accidentally exposed to client-side code (next.config.js publicRuntimeConfig, NEXT_PUBLIC_ prefixed vars containing secrets), (b) API responses that include fields like hashed passwords, internal tokens, or private keys, (c) logs that print sensitive values. List each risk with file path."
+  },
+  {
+    "id": 19,
+    "title": "N+1 Query Patterns",
+    "domain": "performance",
+    "prompt": "Find N+1 database query patterns in cal.com: array.map/forEach that contains a Prisma query per item, tRPC resolvers that make per-item DB lookups, or loops where a findUnique is called for each element instead of a batched findMany. List each pattern with file path, function name, and the specific query inside the loop."
+  },
+  {
+    "id": 20,
+    "title": "Missing Database Indexes",
+    "domain": "performance",
+    "prompt": "Analyze the Prisma schema in cal.com and cross-reference it with the query patterns in the codebase. Find: (a) Prisma where() queries that filter on fields not marked with @index or @unique in the schema, (b) frequently used composite filters that lack a @@index in the schema, (c) foreign key fields used in joins that lack an index. List each case with the schema file reference and the query file reference."
+  },
+  {
+    "id": 21,
+    "title": "Unbounded Query Results",
+    "domain": "performance",
+    "prompt": "Find all Prisma findMany() calls across the cal.com codebase that have no take/limit clause. For each, identify the table being queried, the file path, and whether the result set could grow unboundedly in production (e.g., querying all bookings for a user with no pagination). List the top 10 most dangerous cases by potential result set size."
+  },
+  {
+    "id": 22,
+    "title": "Untested Critical Paths",
+    "domain": "test_gaps",
+    "prompt": "In cal.com, identify the most critical business logic functions (booking creation, payment processing, availability calculation, webhook dispatch) and check whether each has corresponding test coverage in any .test.ts or .spec.ts file. List each critical function, its file path, and whether a test exists. For uncovered functions, explain what scenario they handle and why missing tests are risky."
+  },
+  {
+    "id": 23,
+    "title": "Test-to-Code Ratio by Package",
+    "domain": "test_gaps",
+    "prompt": "For each of the top 10 packages in cal.com (by file count), calculate the ratio of test files to source files. List them sorted by coverage gap (lowest ratio first). For the 3 packages with the worst coverage, list the specific exported functions and classes that have no corresponding test."
+  },
+  {
+    "id": 24,
+    "title": "Flaky Test Patterns",
+    "domain": "test_gaps",
+    "prompt": "Find patterns in the cal.com test suite that are likely to cause flaky tests: (a) tests that use new Date() or Date.now() without mocking time, (b) tests that rely on hardcoded port numbers or network calls, (c) tests with arbitrary setTimeout/sleep calls, (d) tests that don't clean up database state between runs. List each with file path and the specific antipattern."
+  },
+  {
+    "id": 25,
+    "title": "Add Booking Capacity Limit",
+    "domain": "feature_addition",
+    "prompt": "I want to add a 'max attendees' capacity limit to group bookings in cal.com: when a group booking event type reaches its capacity, new bookings should be rejected with a clear error. Identify all files that would need to change, describe the schema change needed (new field on EventType model), where the capacity check should be inserted in the booking flow, and which API response needs the new error code. Do not make any changes — just produce the implementation plan with specific file paths."
+  },
+  {
+    "id": 26,
+    "title": "Add Webhook Signature Verification",
+    "domain": "feature_addition",
+    "prompt": "Cal.com sends webhooks but receiving services need to verify the webhook came from Cal. Design the implementation for HMAC-SHA256 webhook signature verification: what header to add, where in the webhook dispatch code to compute the signature, how to expose the signing secret to users in the UI, and which existing webhook delivery code to modify. Provide file paths and function signatures for all changes needed. Do not make changes."
+  },
+  {
+    "id": 27,
+    "title": "Add Rate Limiting to Booking API",
+    "domain": "feature_addition",
+    "prompt": "Identify the correct layer to add per-user rate limiting to the public booking API in cal.com (the endpoint that creates bookings). Research what rate limiting infrastructure already exists (Redis, middleware, etc.), suggest where to add the limit check, what the limit should be based on (IP, user ID, event type), and list all files that need to change. Do not make changes — produce the plan with file paths."
+  },
+  {
+    "id": 28,
+    "title": "Undocumented Public API Surface",
+    "domain": "docs",
+    "prompt": "Find all exported functions, classes, and types in the cal.com packages that are part of the public API surface (exported from a package's index.ts) but have no JSDoc comment. List them by package, sorted by how widely they are used (most imports first). Focus on packages/core, packages/lib, and packages/types."
+  },
+  {
+    "id": 29,
+    "title": "Implicit Architecture Decisions",
+    "domain": "docs",
+    "prompt": "Reconstruct the implicit architecture decisions embedded in the cal.com codebase: why tRPC over REST (evidence from code structure), why Prisma over raw SQL (evidence from usage patterns), why the monorepo structure is split the way it is (apps vs packages vs lib). For each decision, cite the specific files that reveal the pattern and explain what the code structure tells you about the reasoning."
+  },
+  {
+    "id": 30,
+    "title": "Developer Onboarding Guide",
+    "domain": "docs",
+    "prompt": "Generate a developer onboarding guide for the cal.com codebase: where are the entry points, what are the 5 most important packages to understand first, what does the local dev setup require (env vars, services, database), and what are the 3 most common code patterns (tRPC procedure, Prisma query, React component with data fetching) with a real example of each from the actual codebase. Cite actual file paths for all examples."
+  }
+]

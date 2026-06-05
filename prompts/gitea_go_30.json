@@ -1,0 +1,212 @@
+[
+  {
+    "id": 1,
+    "title": "Missing Auth on API Routes",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Find API routes or handler functions in Gitea where authentication middleware is missing or inconsistently applied — endpoints that should require a signed-in user but skip RequireSignIn or equivalent middleware, or apply it only to some HTTP methods but not others on the same path."
+  },
+  {
+    "id": 2,
+    "title": "Privilege Escalation in Admin Endpoints",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Find endpoints or service methods in Gitea where authorization is insufficient — places where a regular user could access admin functionality, modify another user's data by changing an ID parameter (IDOR), or perform actions beyond their role. Look for missing ownership checks and places where only authentication is checked but not authorization."
+  },
+  {
+    "id": 3,
+    "title": "SQL Injection via Raw Queries",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find all places in the Gitea codebase where raw SQL queries are constructed using string concatenation or fmt.Sprintf with user-controlled input rather than parameterized queries. Check across all packages — models, services, and any direct database access. Enumerate every unsafe pattern found."
+  },
+  {
+    "id": 4,
+    "title": "Sensitive Data in Logs",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find places in Gitea where sensitive data (passwords, tokens, secrets, private keys, access tokens, session cookies) may be written to logs, error messages, or HTTP responses. Look for log.Printf/log.Error/fmt patterns that include sensitive struct fields or variable names across all packages."
+  },
+  {
+    "id": 5,
+    "title": "Path Traversal Vulnerabilities",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Find places in Gitea where file paths are constructed from user input without proper sanitization, potentially allowing path traversal (../../). Look for os.Open, ioutil.ReadFile, filepath.Join, or http.ServeFile calls that use user-supplied path components without validation or cleaning."
+  },
+  {
+    "id": 6,
+    "title": "SSRF via Webhook and Remote URL Fetching",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Find places in Gitea where HTTP requests are made to user-supplied URLs (webhooks, OAuth callbacks, import from URL, avatar fetching) without validating that the target is not an internal network address. Look for places that could be exploited as Server-Side Request Forgery to reach internal services like localhost, 169.254.x.x, or 10.x.x.x."
+  },
+  {
+    "id": 7,
+    "title": "Insecure Direct Object References",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find API handlers in Gitea that accept resource IDs (repo IDs, issue IDs, user IDs, comment IDs) from URL parameters or request bodies and use them in database queries without verifying that the requesting user actually owns or has permission to access that resource. Enumerate all packages with IDOR patterns."
+  },
+  {
+    "id": 8,
+    "title": "CSRF Protection Gaps",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find state-changing HTTP endpoints (POST/PUT/DELETE/PATCH) in Gitea that may be missing CSRF token validation. Look for form handlers and API endpoints that modify data but don't check the _csrf token or equivalent header. Check web routes and API routes separately."
+  },
+  {
+    "id": 9,
+    "title": "Goroutine Leaks",
+    "category": "performance",
+    "task_type": "exhaustive",
+    "prompt": "Find goroutines in Gitea that may leak — places where go func() is used without a corresponding done channel, WaitGroup, or context cancellation to ensure cleanup. Also find places where contexts are not propagated to long-running operations, potentially running after the request completes. Enumerate across all packages."
+  },
+  {
+    "id": 10,
+    "title": "N+1 Query Patterns",
+    "category": "performance",
+    "task_type": "exhaustive",
+    "prompt": "Find places in Gitea where database queries are made inside loops — the classic N+1 problem. Look for patterns where a list of records is fetched and then for each record an additional query is made (e.g. loading repos then loading each repo's owner separately). Check across models, services, and API handlers."
+  },
+  {
+    "id": 11,
+    "title": "Missing Database Indexes",
+    "category": "performance",
+    "task_type": "exhaustive",
+    "prompt": "Review the Gitea database schema and migration files to identify columns that are used in WHERE clauses, JOIN conditions, or ORDER BY expressions but lack indexes. Look in migration files for table definitions and check which columns are frequently queried in the model layer without corresponding index declarations."
+  },
+  {
+    "id": 12,
+    "title": "Unbounded Memory Usage in Pagination",
+    "category": "performance",
+    "task_type": "exhaustive",
+    "prompt": "Find API endpoints or service methods in Gitea that load unbounded lists of records into memory — places with no pagination limit, very large default page sizes, or missing LIMIT clauses. Also look for endpoints that allow the caller to request an arbitrarily large page size without a server-side cap."
+  },
+  {
+    "id": 13,
+    "title": "Missing Context Propagation",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find functions in Gitea that accept a context.Context parameter but do not pass it down to database calls, HTTP client calls, or other I/O operations. Also find places where context.Background() is used inside request handlers instead of the request's context, losing cancellation and deadline propagation."
+  },
+  {
+    "id": 14,
+    "title": "Ignored Errors",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find places in the Gitea codebase where errors are silently ignored — assignments like _, err = or err := where err is never subsequently checked, defer func() calls that discard errors, or functions that return errors but whose callers never handle them. Enumerate across all packages."
+  },
+  {
+    "id": 15,
+    "title": "Panic in Request Handlers",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find places in Gitea's HTTP handlers or middleware where panic() is called directly (outside of test code), or where operations that could panic (nil pointer dereference, out-of-bounds slice access) are performed without proper nil/bounds checks. Also find middleware that recovers from panics but logs insufficient detail for debugging."
+  },
+  {
+    "id": 16,
+    "title": "Race Conditions on Shared State",
+    "category": "reliability",
+    "task_type": "targeted",
+    "prompt": "Find places in Gitea where shared mutable state is accessed from multiple goroutines without proper synchronization — maps read and written concurrently, global variables modified without atomic operations, or cache structures accessed without mutexes. Focus on caches, connection pools, and in-memory counters."
+  },
+  {
+    "id": 17,
+    "title": "Stale or Vulnerable Dependencies",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Review Gitea's go.mod file for dependencies that may be outdated, use old major versions with known vulnerabilities, or are unnecessarily pinned to specific patch versions that prevent security updates. Identify packages with known CVEs, packages that have released major versions with breaking security fixes, and any packages that could be replaced with Go standard library equivalents."
+  },
+  {
+    "id": 18,
+    "title": "Insecure Random Number Generation",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find places in Gitea where math/rand is used instead of crypto/rand for security-sensitive operations — token generation, session IDs, password reset codes, OAuth state parameters, or any value that must be unpredictable. Also look for weak seeding of math/rand that could make outputs predictable."
+  },
+  {
+    "id": 19,
+    "title": "Hardcoded Secrets or Default Credentials",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find hardcoded secrets, default passwords, or example credentials in the Gitea codebase that might be used in production — strings that look like API keys, JWT secrets, database passwords, or admin credentials baked into source files or default configuration. Check config loading code, test helpers, and example files."
+  },
+  {
+    "id": 20,
+    "title": "Open Redirect Vulnerabilities",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find places in Gitea where HTTP redirects use user-supplied URL parameters without validation — patterns where a redirect_to, next, or return_url query parameter is used directly in a redirect response without checking that it's a relative path or matches the expected domain. Enumerate all redirect points in auth and OAuth flows."
+  },
+  {
+    "id": 21,
+    "title": "XSS via Template Rendering",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find places in Gitea's template rendering where user-supplied content is output without HTML escaping — uses of template.HTML(), safeHTML, or raw string injection in Go templates. Also find places where Markdown or user content is rendered to HTML without sufficient sanitization that could allow script injection."
+  },
+  {
+    "id": 22,
+    "title": "Dead Exported Functions",
+    "category": "code_quality",
+    "task_type": "exhaustive",
+    "prompt": "Find exported functions or methods (capital-letter names) in Gitea that appear to have no callers within the repository itself — functions that are part of the public API surface but are never invoked internally. These may be dead code, vestigial API, or helpers that should be unexported. Check across all packages."
+  },
+  {
+    "id": 23,
+    "title": "Duplicate Business Logic",
+    "category": "code_quality",
+    "task_type": "exhaustive",
+    "prompt": "Find places in Gitea where the same business logic is implemented multiple times across different packages — duplicated permission checks, repeated validation logic, or near-identical functions in separate files. Look for code that should be shared via a common utility but is copy-pasted instead. Enumerate 5+ examples."
+  },
+  {
+    "id": 24,
+    "title": "Large Functions Needing Refactoring",
+    "category": "code_quality",
+    "task_type": "exhaustive",
+    "prompt": "Find functions in Gitea that are excessively long (over 100 lines), have very high cyclomatic complexity (many if/else branches, nested loops), or handle too many concerns in a single function body. Identify the top 5 candidates that would benefit most from being split into smaller, more focused functions."
+  },
+  {
+    "id": 25,
+    "title": "Inconsistent Error Response Format",
+    "category": "code_quality",
+    "task_type": "exhaustive",
+    "prompt": "Find inconsistencies in how the Gitea API returns errors — places where some endpoints return {message: string} while others return {error: string}, different HTTP status codes for the same error condition across endpoints, or places where internal error details (stack traces, SQL errors) are leaked in API responses."
+  },
+  {
+    "id": 26,
+    "title": "Missing Rate Limiting",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find API endpoints or actions in Gitea that are vulnerable to brute-force or abuse due to missing rate limiting — login attempts, password reset requests, email verification resends, API token creation, repository forks, or any operation that could be automated at high volume without throttling."
+  },
+  {
+    "id": 27,
+    "title": "Audit Logging Gaps",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find security-sensitive actions in Gitea that are not recorded in the audit log — admin operations, permission changes, user creation/deletion, repository deletion, org ownership transfers, or SSH key addition/removal that should generate audit log entries but do not. Identify which actions call audit.Log() vs those that silently proceed."
+  },
+  {
+    "id": 28,
+    "title": "Insecure File Upload Handling",
+    "category": "security",
+    "task_type": "targeted",
+    "prompt": "Find file upload handlers in Gitea where the file type is not properly validated — places that rely only on the client-supplied Content-Type or file extension without checking the actual file magic bytes. Also look for missing size limits, missing path sanitization for uploaded filenames, and missing checks for dangerous file types (executables, scripts)."
+  },
+  {
+    "id": 29,
+    "title": "Token Expiry and Rotation Issues",
+    "category": "security",
+    "task_type": "exhaustive",
+    "prompt": "Find places in Gitea where authentication tokens, session tokens, OAuth tokens, or API keys are issued without expiry, are not rotated after use (for one-time tokens like password reset), or where token invalidation on logout/revoke is incomplete. Look for token creation code that sets no expiry or uses overly long expiry windows."
+  },
+  {
+    "id": 30,
+    "title": "Missing Input Validation",
+    "category": "reliability",
+    "task_type": "exhaustive",
+    "prompt": "Find places in Gitea's API handlers where user-supplied input is used directly without validation — missing length checks on string fields, no validation of enum values, missing bounds checks on integer inputs, or no sanitization of special characters in fields that are later used in file paths, shell commands, or git operations. Enumerate across all API versions."
+  }
+]
