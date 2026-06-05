@@ -127,7 +127,7 @@ def evaluate_instance(instance, model_patch):
 
 
 def main():
-    preds_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/home/ubuntu/swebench-pro-run/results-graperoot/preds.json")
+    preds_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("./results/preds.json")
 
     preds = json.loads(preds_path.read_text())
     ds = load_dataset("ScaleAI/SWE-bench_Pro", split="test")

@@ -482,7 +482,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--slice", default="0:50")
     ap.add_argument("--workers", type=int, default=2)
-    ap.add_argument("--output", default="/home/ubuntu/swebench-pro-run/results-graperoot")
+    ap.add_argument("--output", default="./results")
     ap.add_argument("--cost-limit", type=float, default=0)
     args = ap.parse_args()
 
